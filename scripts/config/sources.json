@@ -1,0 +1,52 @@
+{
+  "sources": [
+    {
+      "id": "county_recorder",
+      "name": "County Recorder / Public Records",
+      "type": "public_records",
+      "enabled": true,
+      "notes": "Add county-specific RSS feeds or scrape URLs here",
+      "urls": []
+    },
+    {
+      "id": "building_permits",
+      "name": "Building Permits",
+      "type": "permits",
+      "enabled": true,
+      "notes": "Municipal open data portals (e.g. Socrata endpoints)",
+      "urls": []
+    },
+    {
+      "id": "tax_records",
+      "name": "Property Tax Records",
+      "type": "tax_records",
+      "enabled": true,
+      "notes": "County assessor open data feeds",
+      "urls": []
+    },
+    {
+      "id": "deed_transfers",
+      "name": "Deed Transfers / Sales",
+      "type": "deeds",
+      "enabled": true,
+      "notes": "Recorder of deeds feeds — often RSS or bulk CSV",
+      "urls": []
+    },
+    {
+      "id": "foreclosures",
+      "name": "Foreclosure Notices",
+      "type": "foreclosures",
+      "enabled": true,
+      "notes": "Legal notice databases, HUD, county filings",
+      "urls": []
+    },
+    {
+      "id": "zoning",
+      "name": "Zoning & Land Use",
+      "type": "zoning",
+      "enabled": true,
+      "notes": "City/county GIS open data portals",
+      "urls": []
+    }
+  ]
+}

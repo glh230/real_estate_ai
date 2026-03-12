@@ -1,31 +1,80 @@
-# real_estate_ai
+# real_estate_ai 🏠
 
-A comprehensive knowledge base of real estate documents, processes, and domain expertise — purpose-built for AI applications.
+Automated real estate data harvester — pulls official public documents on a schedule and builds a growing dataset over time.
 
-## Goal
+---
 
-Build an exhaustive collection of real estate materials including:
+## How It Works
 
-- 📄 **Documents** — Contracts, leases, purchase agreements, disclosures, addenda, title reports, inspection reports, HOA docs, and more
-- 🔄 **Processes** — Buying, selling, leasing, closing, escrow, appraisal, underwriting, and property management workflows
-- 📊 **Data & Terminology** — Market analysis frameworks, valuation methods, zoning terminology, and industry glossaries
-- ⚖️ **Legal & Compliance** — Fair housing laws, state-specific regulations, landlord/tenant rights, and disclosure requirements
+A cron job fires every **5 minutes**, running `scripts/run_collectors.sh`. Each collector fetches documents from configured sources, deduplicates by URL+date, saves them into the right `data/` subfolder, and then auto-commits + pushes everything to this repo.
 
-## Purpose
+Over time the repo becomes a rich, version-controlled archive of real estate data.
 
-This repository serves as the foundation for training, fine-tuning, and prompting AI models on real estate tasks — from document generation and review to process automation and client-facing Q&A.
+---
 
-## Structure
+## Directory Structure
 
 ```
 real_estate_ai/
-├── documents/        # Templates and sample real estate documents
-├── processes/        # Step-by-step workflows for common transactions
-├── data/             # Market data, glossaries, taxonomies
-├── legal/            # Regulatory references and compliance guides
-└── prompts/          # AI prompt templates for real estate use cases
+├── scripts/
+│   ├── run_collectors.sh        # Main entry point (called by cron)
+│   ├── collectors/
+│   │   ├── collect_public_records.sh
+│   │   ├── collect_permits.sh
+│   │   ├── collect_deeds.sh
+│   │   ├── collect_foreclosures.sh
+│   │   ├── collect_tax_records.sh
+│   │   └── collect_zoning.sh
+│   ├── utils/
+│   │   └── helpers.sh           # Shared logging, download, git-push utils
+│   └── config/
+│       └── sources.json         # ← ADD YOUR DATA SOURCES HERE
+├── data/
+│   ├── public_records/          # County recorder docs
+│   ├── permits/                 # Building permit exports
+│   ├── deeds/                   # Deed transfers / sales
+│   ├── foreclosures/            # Foreclosure notices
+│   ├── tax_records/             # Property tax assessments
+│   ├── zoning/                  # Zoning & land use data
+│   └── raw/                     # Unclassified downloads (gitignored)
+└── logs/
+    └── collector.log            # Rolling collector log
 ```
 
-## Contributing
+---
 
-Add documents, workflows, or data that would help an AI better understand real estate. Quality and breadth both matter.
+## Adding Data Sources
+
+Edit `scripts/config/sources.json` and add URLs under the appropriate source type:
+
+```json
+{
+  "id": "my_county_deeds",
+  "name": "My County Deed RSS",
+  "type": "deeds",
+  "enabled": true,
+  "urls": [
+    "https://mycounty.gov/recorder/feed/rss",
+    "https://mycounty.gov/recorder/bulk/2024.csv"
+  ]
+}
+```
+
+**Supported types:** `public_records` · `permits` · `deeds` · `foreclosures` · `tax_records` · `zoning`
+
+RSS/Atom feeds are detected automatically and individual document links are extracted and downloaded.
+
+---
+
+## Cron Schedule
+
+Managed by OpenClaw — runs every 5 minutes automatically. No setup required.
+
+---
+
+## Dependencies
+
+- `bash` 4+
+- `curl`
+- `jq`
+- `git` (with push credentials configured)

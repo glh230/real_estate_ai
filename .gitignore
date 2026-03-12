@@ -1,0 +1,22 @@
+# Ignore large raw binary downloads in raw/ but keep the folder
+data/raw/*
+!data/raw/.gitkeep
+
+# Keep all structured data subdirs tracked
+!data/public_records/
+!data/permits/
+!data/tax_records/
+!data/deeds/
+!data/foreclosures/
+!data/zoning/
+
+# Logs (keep .gitkeep, ignore actual log output)
+logs/*.log
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Temp
+*.tmp
+*.swp

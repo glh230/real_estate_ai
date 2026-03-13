@@ -17,4 +17,4 @@ The cron runs **scripts/collect_from_urls.py** each run. It:
 - Saves structured text (headings, paragraphs) and binaries into **collected/&lt;date&gt;/**.
 - Persists **last_index** and **cycle_complete** in **collected/.collect_state.json**. Commit this file so the next run continues from the right place (no re-scanning the same sites).
 
-After **all 100 URLs** have been done in one cycle, **cycle_complete** is set. Then you can add a **new URL list** (e.g. `top100_real_estate_urls_v2.json`) and point the script at it, or rotate to a fresh list for the next round.
+After **all 100 URLs** have been done in one cycle, **cycle_complete** is set. The collector posts in Slack: use the **OpenClaw chat interface** (or the **Real Estate URL Generator** agent/skill) to generate a new list of real estate URLs. You can save it as `top100_real_estate_urls_v2.json` and point the script at it, or replace the current file and reset `collected/.collect_state.json` to `{"last_index": 0, "cycle_complete": false}`.

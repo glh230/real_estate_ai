@@ -1,80 +1,34 @@
-# real_estate_ai 🏠
+# Real Estate Data Collection
 
-Automated real estate data harvester — pulls official public documents on a schedule and builds a growing dataset over time.
+We maintain a **top 100 real estate URLs** list. We **go to those URLs and gather the data ourselves**, then **store what we collect in this repo**. The goal is a growing corpus of real estate content we can use downstream (e.g. with Nexus to generate Q&A data to train Miles on).
 
----
+## What we collect
 
-## How It Works
+- **Homes and properties** — listings, descriptions, market context.
+- **Rules, laws, and regulations** — real estate law, licensing, disclosure, zoning.
+- **Current events** — news and updates around real estate.
+- **Marketing** — how properties and agents are marketed; copy and positioning.
 
-A cron job fires every **5 minutes**, running `scripts/run_collectors.sh`. Each collector fetches documents from configured sources, deduplicates by URL+date, saves them into the right `data/` subfolder, and then auto-commits + pushes everything to this repo.
+## Top 100 URLs
 
-Over time the repo becomes a rich, version-controlled archive of real estate data.
+- **List:** `urls/top100_real_estate_urls.json` (curated URLs with category, region, label).
+- We **visit these URLs ourselves** and gather content into the repo (e.g. into `collected/` or similar). No external scraper bot required for the core flow — we do the collection.
 
----
+## Nexus and Miles
 
-## Directory Structure
+**Nexus** can use this collected data to **generate Q&A data to train Miles on**. The flow is: we collect real estate data here → that data is used (e.g. in Nexus) to create question/answer pairs for training Miles. This repo is the **collection** side; Nexus is the **Q&A / training** side.
 
-```
-real_estate_ai/
-├── scripts/
-│   ├── run_collectors.sh        # Main entry point (called by cron)
-│   ├── collectors/
-│   │   ├── collect_public_records.sh
-│   │   ├── collect_permits.sh
-│   │   ├── collect_deeds.sh
-│   │   ├── collect_foreclosures.sh
-│   │   ├── collect_tax_records.sh
-│   │   └── collect_zoning.sh
-│   ├── utils/
-│   │   └── helpers.sh           # Shared logging, download, git-push utils
-│   └── config/
-│       └── sources.json         # ← ADD YOUR DATA SOURCES HERE
-├── data/
-│   ├── public_records/          # County recorder docs
-│   ├── permits/                 # Building permit exports
-│   ├── deeds/                   # Deed transfers / sales
-│   ├── foreclosures/            # Foreclosure notices
-│   ├── tax_records/             # Property tax assessments
-│   ├── zoning/                  # Zoning & land use data
-│   └── raw/                     # Unclassified downloads (gitignored)
-└── logs/
-    └── collector.log            # Rolling collector log
-```
+## Project layout
 
----
+- **`urls/`** — Top 100 real estate URLs; see `urls/README.md`.
+- **`collected/`** (or your chosen folder) — Raw or processed data we gather from those URLs.
+- **`docs/`** — Design, setup, and source guidelines.
 
-## Adding Data Sources
+## Cron job
 
-Edit `scripts/config/sources.json` and add URLs under the appropriate source type:
+A **cron job** can run the collector on a schedule so each run fetches a **subset** of the top 100 URLs (round-robin, 15 per run) and saves text into `collected/<date>/`. See **`docs/CRON.md`** for crontab examples and **`scripts/cron-collect.sh`** as the entry point.
 
-```json
-{
-  "id": "my_county_deeds",
-  "name": "My County Deed RSS",
-  "type": "deeds",
-  "enabled": true,
-  "urls": [
-    "https://mycounty.gov/recorder/feed/rss",
-    "https://mycounty.gov/recorder/bulk/2024.csv"
-  ]
-}
-```
+## Next steps
 
-**Supported types:** `public_records` · `permits` · `deeds` · `foreclosures` · `tax_records` · `zoning`
-
-RSS/Atom feeds are detected automatically and individual document links are extracted and downloaded.
-
----
-
-## Cron Schedule
-
-Managed by OpenClaw — runs every 5 minutes automatically. No setup required.
-
----
-
-## Dependencies
-
-- `bash` 4+
-- `curl`
-- `jq`
-- `git` (with push credentials configured)
+1. Run the collector by hand or via cron: `./scripts/cron-collect.sh` or `python3 scripts/collect_from_urls.py`.
+2. Data lands in `collected/YYYY-MM-DD/`. When ready, feed that data into Nexus to generate Q&A for training Miles.

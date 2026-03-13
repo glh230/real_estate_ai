@@ -1,0 +1,26 @@
+{
+  "public_records": [
+    "https://example.nccounty.gov/api/records",
+    "https://data.xxx.socrata.com/..."
+  ],
+  "permits": [
+    "https://data.xxx.socrata.com/.../building-permits",
+    "https://permits.nccity.gov/..."
+  ],
+  "deeds": [
+    "https://rod.nccounty.gov/...",
+    "https://data.xxx.socrata.com/.../deeds"
+  ],
+  "foreclosures": [
+    "https://www.hud.gov/...",
+    "https://clerk.nccounty.gov/foreclosures"
+  ],
+  "tax_records": [
+    "https://tax.nccounty.gov/...",
+    "https://data.xxx.socrata.com/.../assessor"
+  ],
+  "zoning": [
+    "https://gis.nccounty.gov/.../zoning",
+    "https://data.xxx.socrata.com/.../zoning"
+  ]
+}

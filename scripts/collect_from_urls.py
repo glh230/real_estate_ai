@@ -1,8 +1,9 @@
 #!/usr/bin/env python3
 """
-Cron-friendly collector: read top 100 URLs, pick a round-robin subset,
-fetch each URL, save text into collected/<date>/.
-State (last index) is stored in collected/.collect_state.json.
+Cron-friendly collector: read top 100 URLs, pick a round-robin subset (spread across
+the list for variety), fetch each URL, save text/PDF/images into collected/<date>/.
+Errors are written to .err but ignored for counts and commit.
+State (last_index) is stored in collected/.collect_state.json.
 """
 
 from __future__ import annotations
@@ -27,6 +28,16 @@ SUBSET_SIZE = 15
 STATE_FILE = "collected/.collect_state.json"
 URLS_FILE = "urls/top100_real_estate_urls.json"
 
+# Extensions we save (do not commit .err)
+BINARY_TYPES = {
+    "application/pdf": ".pdf",
+    "image/png": ".png",
+    "image/jpeg": ".jpg",
+    "image/jpg": ".jpg",
+    "image/gif": ".gif",
+    "image/webp": ".webp",
+}
+
 
 def _strip_html(html: str) -> str:
     """Crude HTML-to-text: remove tags and collapse whitespace."""
@@ -37,24 +48,49 @@ def _strip_html(html: str) -> str:
     return text.strip()
 
 
-def fetch_url(url: str, timeout: int = 25) -> tuple[str | None, str | None]:
-    """Fetch URL; return (text_content, error_message). Prefer requests."""
+def _extension_from_url(url: str) -> str | None:
+    """Return a file extension if URL looks like a binary asset."""
+    path = (urlparse(url).path or "").lower()
+    if path.endswith(".pdf"):
+        return ".pdf"
+    for ext in (".png", ".jpg", ".jpeg", ".gif", ".webp"):
+        if path.endswith(ext):
+            return ".jpg" if ext == ".jpeg" else ext
+    return None
+
+
+def fetch_url(url: str, timeout: int = 25) -> tuple[str | bytes | None, str | None, str | None]:
+    """
+    Fetch URL. Return (content, content_type_or_none, error_message).
+    content is either text (str), binary (bytes), or None on failure.
+    """
     if HAS_REQUESTS:
         try:
-            r = requests.get(url, timeout=timeout, headers={"User-Agent": "RealEstateCollector/1.0"})
+            r = requests.get(
+                url,
+                timeout=timeout,
+                headers={"User-Agent": "RealEstateCollector/1.0"},
+                stream=True,
+            )
             r.raise_for_status()
-            return (_strip_html(r.text), None)
+            ct = (r.headers.get("Content-Type") or "").split(";")[0].strip().lower()
+            if any(ct.startswith(k) for k in BINARY_TYPES):
+                return (r.content, ct, None)
+            return (_strip_html(r.text), ct, None)
         except requests.RequestException as e:
-            return (None, str(e))
+            return (None, None, str(e))
     else:
         try:
             from urllib.request import Request, urlopen
             req = Request(url, headers={"User-Agent": "RealEstateCollector/1.0"})
             with urlopen(req, timeout=timeout) as resp:
-                html = resp.read().decode(errors="replace")
-            return (_strip_html(html), None)
+                ct = (resp.headers.get("Content-Type") or "").split(";")[0].strip().lower()
+                raw = resp.read()
+                if any(ct.startswith(k) for k in BINARY_TYPES):
+                    return (raw, ct, None)
+                return (_strip_html(raw.decode(errors="replace")), ct, None)
         except Exception as e:
-            return (None, str(e))
+            return (None, None, str(e))
 
 
 def safe_filename(url: str, label: str | None) -> str:
@@ -95,11 +131,11 @@ def main() -> int:
         except (json.JSONDecodeError, OSError):
             pass
 
+    # Spread indices across the list so each run gets varied sources (not just first N)
     start_index = state.get("last_index", 0) % total
-    subset = []
-    for i in range(SUBSET_SIZE):
-        idx = (start_index + i) % total
-        subset.append(urls_list[idx])
+    step = max(1, total // SUBSET_SIZE)
+    indices = [(start_index + i * step) % total for i in range(SUBSET_SIZE)]
+    subset = [urls_list[i] for i in indices]
 
     today = datetime.now(timezone.utc).strftime("%Y-%m-%d")
     out_dir = repo_root / "collected" / today
@@ -111,10 +147,22 @@ def main() -> int:
         label = entry.get("label")
         if not url:
             continue
-        text, err = fetch_url(url)
+        content, content_type, err = fetch_url(url)
         stem = safe_filename(url, label)
-        if text:
-            (out_dir / f"{stem}.txt").write_text(text, encoding="utf-8")
+        if content is not None:
+            ext_from_url = _extension_from_url(url)
+            if isinstance(content, bytes):
+                # Binary: use Content-Type or URL to pick extension
+                ext = None
+                if content_type:
+                    for ct, e in BINARY_TYPES.items():
+                        if content_type.startswith(ct):
+                            ext = e
+                            break
+                ext = ext or ext_from_url or ".bin"
+                (out_dir / f"{stem}{ext}").write_bytes(content)
+            else:
+                (out_dir / f"{stem}.txt").write_text(content, encoding="utf-8")
             ok += 1
         else:
             (out_dir / f"{stem}.err").write_text(err or "unknown error", encoding="utf-8")

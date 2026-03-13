@@ -1,0 +1,192 @@
+New Residential Sales 
+
+ -->
+ -->
+
+ An official website of the United States government
+
+ The U.S. Census Bureau is updating its economic indicator release calendar in coordination with other agencies and the Office of Management and Budget to address the impacts of the recent lapse in federal funding. We will provide the updated release schedule as soon as it becomes available. For more information, see Census' Recovery Plan for Principal Federal Economic Indicators . 
+
+ The November 2025 release, originally scheduled for December 23, 2025, and the December 2025 release, originally scheduled for January 27, 2026, for the New Residential Sales report have been rescheduled for release on February 20, 2026. For more information, see the Economic Indicators Release Schedule .
+
+ Skip to main content 
+
+ -->
+
+ end of header 
+
+ Census.gov
+ 
+ > 
+
+ Business and Economy > 
+ Economic Indicators > 
+ New Residential Sales 
+
+ New Residential Sales
+
+ Skip to looking for section 
+
+ Main 
+
+ About 
+
+ Information for Respondents 
+
+ Data 
+
+ Technical Documentation 
+
+ Definitions 
+
+ Time Series/Trend Charts 
+
+ Release Schedule 
+
+ FAQs 
+
+ Contact Us 
+
+ Back to Our Surveys & Programs 
+
+ Main 
+
+ About 
+
+ Information for Respondents 
+
+ Data 
+
+ Technical Documentation 
+
+ Definitions 
+
+ Time Series/Trend Charts 
+
+ Release Schedule 
+
+ FAQs 
+
+ Contact Us 
+
+ Back to Our Surveys & Programs 
+
+ Main 
+
+ About 
+
+ Information for Respondents 
+
+ Data 
+
+ Technical Documentation 
+
+ Definitions 
+
+ Time Series/Trend Charts 
+
+ Release Schedule 
+
+ FAQs 
+
+ Contact Us 
+
+ Sponsored By: 
+
+ -->
+
+ This page provides national and regional data on the number of new single-family houses sold and for sale. It also provides national data on median and average prices, the number of houses sold and for sale by stage of construction, and other statistics. The data are from the Survey of Construction (SOC), which is partially funded by the Department of Housing and Urban Development (HUD).
+
+ Read More
+
+ Latest New Residential Sales Report
+
+ Quarterly Sales by Price and Financing
+
+ Release Schedule
+
+ Announcements
+
+ 2/20/26 - Due to a processing error, the Year to year percent changes found in Table 1b of the Excel version released at 10:00am ET on 2/20/2026 were incorrect. The corrected tables were posted at 4:35pm ET on 2/20/2026. The pdf version of the tables did not require correction.
+
+ 2/20/26 - The December New Home Sales release also contains initial estimates for the month of November.
+
+ 1/13/26 - The October New Home Sales release also contains initial estimates for the month of September.
+
+ 5/23/24 - Beginning with this release, the sales price range groups in Table 2, "New Privately‐Owned Houses Sold, by Sales Price" have been updated to better reflect the current distribution of new home prices. New price groupings have also been introduced in our time series file "New Houses Sold and For Sale by Price Range". Data between January 2020 and March 2024 have been re‐calculated incorporating any additional data and revisions received since initial publication and re‐released in the new price groupings. Data from 2002‐2019 have been archived in a time series file with the former price groupings. In addition, data in the "Quarterly Sales by Price and Financing", the price index for "Quarterly Single‐Family Houses Sold" and all tables containing historical median and average sales price data have been revised between January 2020 and March 2024.
+
+ You May Be Interested In
+
+ You May Be Interested In
+
+ Interactive Tool
+
+ Time Series/Trend Charts
+
+ Create your own customizable time series.
+
+ View More 
+
+ Mobile Application
+
+ FRED Economic Data
+
+ Receive the latest updates on the nation's key economic indicators by downloading the FRED App for both Apple and Android devices. FRED, the signature database of the Federal Reserve Bank of St. Louis, now incorporates the Census Bureau's 13 economic indicators.
+
+ View More 
+
+ Around the Bureau
+
+ Related Topics
+
+ See other pages that are related to this program.
+
+ View More 
+
+ -->
+
+ CONNECT WITH US 
+
+ -->
+
+ Information Quality 
+
+ Data Linkage Infrastructure 
+
+ Data Protection and Privacy Policy 
+
+ Accessibility 
+ 
+ FOIA 
+
+ Inspector General 
+
+ No FEAR Act 
+
+ U.S. Department of Commerce 
+
+ USA.gov 
+
+ Measuring America's People, Places, and Economy
+
+ X
+
+ &nbsp;&nbsp;Is this page helpful? 
+
+ Yes &nbsp;&nbsp;&nbsp;
+ 
+ No 
+
+ X
+
+ No, thanks 
+ 
+ 255 characters remaining
+
+ X
+
+ Thank you for your feedback. 
+
+ Comments or suggestions? 
+
+ By selecting this link you will leave www.census.gov . Please check the Privacy Policy of the site you are visiting.

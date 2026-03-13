@@ -1,9 +1,10 @@
 #!/usr/bin/env python3
 """
-Cron-friendly collector: read top 100 URLs, pick a round-robin subset (spread across
-the list for variety), fetch each URL, save text/PDF/images into collected/<date>/.
-Errors are written to .err but ignored for counts and commit.
-State (last_index) is stored in collected/.collect_state.json.
+Cron-friendly collector: read top 100 URLs, process the next N in order each run,
+fetch each URL, save structured text or binary into collected/<date>/.
+State (last_index, cycle_complete) in collected/.collect_state.json; commit it so
+progress persists. When a full cycle (all 100) completes, cycle_complete is set so
+you can switch to a new URL list (e.g. urls/top100_real_estate_urls_v2.json).
 """
 
 from __future__ import annotations
@@ -16,19 +17,16 @@ from datetime import datetime, timezone
 from pathlib import Path
 from urllib.parse import urlparse
 
-# Optional: use requests if available for nicer behavior; else fallback to urllib
 try:
     import requests
     HAS_REQUESTS = True
 except ImportError:
     HAS_REQUESTS = False
 
-# Subset size per run (cron run = this many URLs)
 SUBSET_SIZE = 15
 STATE_FILE = "collected/.collect_state.json"
 URLS_FILE = "urls/top100_real_estate_urls.json"
 
-# Extensions we save (do not commit .err)
 BINARY_TYPES = {
     "application/pdf": ".pdf",
     "image/png": ".png",
@@ -39,17 +37,41 @@ BINARY_TYPES = {
 }
 
 
-def _strip_html(html: str) -> str:
-    """Crude HTML-to-text: remove tags and collapse whitespace."""
+def _html_to_structured_text(html: str) -> str:
+    """
+    Extract readable, structured text: headings as lines, paragraphs and lists
+    separated. Reduces nav/boilerplate and avoids one giant string.
+    """
+    # Remove script and style
     text = re.sub(r"<script[^>]*>.*?</script>", "", html, flags=re.DOTALL | re.IGNORECASE)
     text = re.sub(r"<style[^>]*>.*?</style>", "", text, flags=re.DOTALL | re.IGNORECASE)
+    # Block boundaries -> newlines so we keep structure
+    text = re.sub(r"</(?:p|div|h[1-6]|li|tr|section|article|main|header|footer)\s*>", "\n", text, flags=re.IGNORECASE)
+    text = re.sub(r"<(?:br|hr)\s*/?\s*>", "\n", text, flags=re.IGNORECASE)
+    # Heading content on its own line (keep level)
+    for level in range(1, 7):
+        def repl(m):
+            inner = re.sub(r"<[^>]+>", "", m.group(1))
+            return "\n\n" + ("#" * level) + " " + inner.strip() + "\n\n"
+        text = re.sub(
+            rf"<h{level}[^>]*>(.*?)</h{level}\s*>",
+            repl,
+            text,
+            flags=re.DOTALL | re.IGNORECASE,
+        )
+    # Strip remaining tags
     text = re.sub(r"<[^>]+>", " ", text)
-    text = re.sub(r"\s+", " ", text)
+    # Decode common entities
+    text = text.replace("&amp;", "&").replace("&lt;", "<").replace("&gt;", ">").replace("&quot;", '"')
+    text = re.sub(r"&#(\d+);", lambda m: chr(int(m.group(1))) if m.group(1).isdigit() else m.group(0), text)
+    text = re.sub(r"&#x([0-9a-fA-F]+);", lambda m: chr(int(m.group(1), 16)), text)
+    # Collapse whitespace but keep paragraph breaks (double newline)
+    text = re.sub(r"[ \t]+", " ", text)
+    text = re.sub(r"\n\s*\n\s*\n+", "\n\n", text)
     return text.strip()
 
 
 def _extension_from_url(url: str) -> str | None:
-    """Return a file extension if URL looks like a binary asset."""
     path = (urlparse(url).path or "").lower()
     if path.endswith(".pdf"):
         return ".pdf"
@@ -60,10 +82,6 @@ def _extension_from_url(url: str) -> str | None:
 
 
 def fetch_url(url: str, timeout: int = 25) -> tuple[str | bytes | None, str | None, str | None]:
-    """
-    Fetch URL. Return (content, content_type_or_none, error_message).
-    content is either text (str), binary (bytes), or None on failure.
-    """
     if HAS_REQUESTS:
         try:
             r = requests.get(
@@ -76,7 +94,7 @@ def fetch_url(url: str, timeout: int = 25) -> tuple[str | bytes | None, str | No
             ct = (r.headers.get("Content-Type") or "").split(";")[0].strip().lower()
             if any(ct.startswith(k) for k in BINARY_TYPES):
                 return (r.content, ct, None)
-            return (_strip_html(r.text), ct, None)
+            return (_html_to_structured_text(r.text), ct, None)
         except requests.RequestException as e:
             return (None, None, str(e))
     else:
@@ -88,13 +106,12 @@ def fetch_url(url: str, timeout: int = 25) -> tuple[str | bytes | None, str | No
                 raw = resp.read()
                 if any(ct.startswith(k) for k in BINARY_TYPES):
                     return (raw, ct, None)
-                return (_strip_html(raw.decode(errors="replace")), ct, None)
+                return (_html_to_structured_text(raw.decode(errors="replace")), ct, None)
         except Exception as e:
             return (None, None, str(e))
 
 
 def safe_filename(url: str, label: str | None) -> str:
-    """Produce a safe filename stem from URL and optional label."""
     parsed = urlparse(url)
     netloc = re.sub(r"[^a-zA-Z0-9.-]", "_", parsed.netloc or "unknown")
     path = (parsed.path or "/").strip("/") or "index"
@@ -123,7 +140,7 @@ def main() -> int:
 
     total = len(urls_list)
     state_path = repo_root / STATE_FILE
-    state = {"last_index": 0}
+    state = {"last_index": 0, "cycle_complete": False}
     if state_path.exists():
         try:
             with open(state_path, encoding="utf-8") as f:
@@ -131,10 +148,9 @@ def main() -> int:
         except (json.JSONDecodeError, OSError):
             pass
 
-    # Spread indices across the list so each run gets varied sources (not just first N)
+    # Next N URLs in order (0..99 then wrap)
     start_index = state.get("last_index", 0) % total
-    step = max(1, total // SUBSET_SIZE)
-    indices = [(start_index + i * step) % total for i in range(SUBSET_SIZE)]
+    indices = [(start_index + i) % total for i in range(SUBSET_SIZE)]
     subset = [urls_list[i] for i in indices]
 
     today = datetime.now(timezone.utc).strftime("%Y-%m-%d")
@@ -152,7 +168,6 @@ def main() -> int:
         if content is not None:
             ext_from_url = _extension_from_url(url)
             if isinstance(content, bytes):
-                # Binary: use Content-Type or URL to pick extension
                 ext = None
                 if content_type:
                     for ct, e in BINARY_TYPES.items():
@@ -168,13 +183,16 @@ def main() -> int:
             (out_dir / f"{stem}.err").write_text(err or "unknown error", encoding="utf-8")
             fail += 1
 
-    state["last_index"] = (start_index + SUBSET_SIZE) % total
+    # Advance: next run will do the next SUBSET_SIZE URLs
+    next_index = (start_index + SUBSET_SIZE) % total
+    state["last_index"] = next_index
     state["last_run"] = datetime.now(timezone.utc).isoformat()
+    state["cycle_complete"] = next_index == 0 and start_index != 0  # just finished full cycle
     state_path.parent.mkdir(parents=True, exist_ok=True)
     with open(state_path, "w", encoding="utf-8") as f:
         json.dump(state, f, indent=2)
 
-    print(f"Collected {ok} OK, {fail} failed -> collected/{today}/")
+    print(f"Collected {ok} OK, {fail} failed -> collected/{today}/ (next_index={next_index}, cycle_complete={state['cycle_complete']})")
     return 0 if fail == 0 else 2
 
 

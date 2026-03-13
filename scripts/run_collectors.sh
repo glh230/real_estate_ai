@@ -36,6 +36,7 @@ fi
 
 # 3) Summary for the agent (agent does git add / commit / push and posts to Slack)
 echo "COMMITTABLE_FILES:"
+echo "  collected/.collect_state.json"
 if [ -n "$DATE" ] && [ -d "$REPO_ROOT/collected/$DATE" ]; then
   find "$REPO_ROOT/collected/$DATE" -maxdepth 1 -type f ! -name "*.err" 2>/dev/null | while read -r f; do
     echo "  collected/$DATE/$(basename "$f")"
@@ -46,5 +47,9 @@ echo "COLLECTION_DATE: ${DATE:- none}"
 [ -n "$DATE" ] && echo "COLLECTION_DIR: collected/$DATE/"
 [ -n "$DATE" ] && echo "GITHUB_COLLECTED_LINK: ${GITHUB_REPO}/tree/main/collected/${DATE}"
 echo "SLACK_LINE: :file_folder: New files downloaded: $NEW_FILES (collected/${DATE:-none})"
+if [ -f "$STATE" ] && command -v jq &>/dev/null; then
+  CYCLE="$(jq -r '.cycle_complete // false' "$STATE")"
+  [ "$CYCLE" = "true" ] && echo "CYCLE_COMPLETE: true (all 100 URLs done this cycle; consider switching to a new URL list)"
+fi
 echo ""
 echo "——— End summary ———"

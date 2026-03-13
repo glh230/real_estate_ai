@@ -9,14 +9,12 @@ We keep a curated **top 100** real estate URLs. **We visit these URLs ourselves*
 - **Categories:** e.g. state_regulatory, county, city, deeds, tax_records, open_data, listings, federal, industry, zoning.
 - **Regions:** e.g. nc (North Carolina), national.
 
-## Gathering in subsets
+## How the collector works
 
-You can work through the list in **subsets** each run (e.g. 10–20 URLs) to keep runs manageable:
+The cron runs **scripts/collect_from_urls.py** each run. It:
 
-1. **By category** — e.g. this run: only `state_regulatory` and `deeds`.
-2. **By region** — e.g. this run: only `nc`, capped at 20.
-3. **Random N** — e.g. 20 random URLs from the full list.
-4. **Round-robin** — next 20 in order; persist an index and wrap.
-5. **Priority** — high-priority URLs first, then fill up to N.
+- Processes the **next 15 URLs in order** (0, 1, 2, … then wrap at 100).
+- Saves structured text (headings, paragraphs) and binaries into **collected/&lt;date&gt;/**.
+- Persists **last_index** and **cycle_complete** in **collected/.collect_state.json**. Commit this file so the next run continues from the right place (no re-scanning the same sites).
 
-Read `top100_real_estate_urls.json`, pick your subset, then visit those URLs and save the gathered content into the repo (e.g. `collected/`).
+After **all 100 URLs** have been done in one cycle, **cycle_complete** is set. Then you can add a **new URL list** (e.g. `top100_real_estate_urls_v2.json`) and point the script at it, or rotate to a fresh list for the next round.
